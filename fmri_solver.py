@@ -46,25 +46,16 @@ def main():
     weights = np.zeros([len(signals_train[0])])
     z = np.zeros([len(y)])
 
-    lambdaValues = [30, 15, 10, 1, .5]
-    results = [0, 0, 0, 0, 0]
-    print("30")
-    results[0] = squared_error(y, signals_train, scd_2(30, y, signals_train, weights, z, 40000, .01))
-    print(results[0])
-
-    print("15")
-    results[1] = squared_error(y, signals_train, scd_2(15, y, signals_train, weights, z, 40000, .01))
-    print(results[1])
-
-    print("10")
-    results[2] = squared_error(y, signals_train, scd_2(10, y, signals_train, weights, z, 40000, .01))
-    print(results[2])
-
-    print("1")
-    results[3] = squared_error(y, signals_train, scd_2(1, y, signals_train, weights, z, 40000, .01))
-
-    print(".5")
-    results[4] = squared_error(y, signals_train, scd_2(.5, y, signals_train, weights, z, 40000, .01))
+    lambdaValues = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, .4]
+    results = [0, 0, 0, 0, 0, 0, 0, 0]
+    results[0] = squared_error(y, signals_train, scd(.05, y, signals_train, weights, z, 10))
+    results[1] = squared_error(y, signals_train, scd(.1, y, signals_train, weights, z, 10))
+    results[2] = squared_error(y, signals_train, scd(.15, y, signals_train, weights, z, 10))
+    results[3] = squared_error(y, signals_train, scd(.2, y, signals_train, weights, z, 10))
+    results[4] = squared_error(y, signals_train, scd(.25, y, signals_train, weights, z, 10))
+    results[5] = squared_error(y, signals_train, scd(.3, y, signals_train, weights, z, 10))
+    results[6] = squared_error(y, signals_train, scd(.35, y, signals_train, weights, z, 10))
+    results[7] = squared_error(y, signals_train, scd(.4, y, signals_train, weights, z, 10))
 
     plt.plot(lambdaValues, results)
     plt.savefig('squaredErrorTraining.png')
@@ -103,61 +94,54 @@ def lasso(lmbda, y, X, weights):
             weights[j] = new_weight
     return weights
 
+def scd(lmbda, y, X, w, z, num_iterations):
+    num_attributes = len(X[0])
+    num_values = len(y)
+    current_iteration = 0
 
-def scd(lmbda, y, X, w, z, num_epochs, step_size):
-    for t in range(num_epochs):
-        # Pick a random j
-        j = randint(0, len(X[0]) - 1)
-        beta = 1 # 1 for squared loss
-        sum = 0
-        for i in range(len(y)):
-            if X[i][j] != 0:
-                sum += (loss_prime(z[i], y[i]) * X[i][j])
-        g_j = (1/float(len(y))) * sum
-        update_term = w[j] - g_j / beta
-        if update_term > (lmbda / beta):
-            w[j] = update_term - (lmbda / beta)
-        elif update_term < -(lmbda / beta):
-            w[j] = update_term + (lmbda / beta)
-        else:
-            w[j] = 0
-        for i in range(len(y)):
-            if X[i][j] != 0:
-                z[i] = z[i] + step_size * X[i][j]
+    w_minus = np.zeros([num_attributes]) # 21xxx x 1 vector
+    w_plus = np.zeros([num_attributes]) # 21xxx x 1 vector
+    w_old = np.copy(w) # 21xxx x 1 vector
+    wTX = np.dot(X, w) # 300 x 1 vector
+
+    # While not converged
+    while current_iteration < num_iterations:
+        # Each iteration, do num_attributes worth updates
+        for i in range(num_attributes):
+            # Pick a random j from 0 to 2*num_attributes - 1
+            j = randint(0, (num_attributes * 2) - 1)
+
+            if (j < num_attributes):
+                x_j = X[:, j] # 300 x 1 vector
+                diff = np.subtract(wTX, y)
+                gradient = np.dot(x_j, diff) / num_values * 1.0
+                max_add = max(-w_plus[j], -gradient - lmbda)
+                w_plus[j] += max_add
+                wTX_change = x_j * max_add
+                wTX = np.add(wTX, wTX_change)
+            else:
+                j = j - num_attributes
+                x_j = X[:, j]
+                diff = np.subtract(wTX, y)
+                gradient = -1.0 * np.dot(x_j, diff) / num_values
+                max_add = max(-w_minus[j], -gradient - lmbda)
+                w_minus[j] +=  max_add
+                wTX_change = x_j * -max_add
+                wTX = np.add(wTX, wTX_change)
+
+        current_iteration += 1
+        w = np.subtract(w_plus, w_minus)
+
+        if np.linalg.norm(np.subtract(w, w_old)) < 10 ** -6:
+            break
+        w_old = np.copy(w)
+
+        print(current_iteration)
 
     return w
 
 
-def scd_2(lmbda, y, X, w, z, num_iterations, step_size):
-    num_attributes = len(X[0])
-    w_minus = np.zeros([num_attributes])
-    w_plus = np.zeros([num_attributes])
-    wTX = np.dot(X, w)
-    num_values = len(y)
-    # While not converged
-    for i in range(num_iterations):
-        # Choose j at random
-        j = randint(0, (num_attributes * 2) - 1)
-        #-1/n(Y - X~w~) * x_j  + lambda
 
-        # J can be anywhere from 0 to 2p-1, so check which half it's on, and subsequently update correct 'side' of w. 
-        if (j < num_attributes):
-            x_j = X[:, j]
-            diff = np.subtract(y, wTX)
-            gradient = np.dot(x_j, diff) / num_values * 1.0
-            w_plus[j] += max(-w_plus[j], -gradient - lmbda)
-            wTX_change = x_j * (max(-w_plus[j], -gradient - lmbda))
-            wTX = np.add(wTX, wTX_change)
-        else:
-            j = j % num_attributes
-            x_j = X[:, j]
-            diff = np.subtract(y, wTX)
-            gradient = -np.dot(x_j, diff) / num_values * 1.0
-            w_minus[j] +=  max(-w_minus[j], -gradient - lmbda)
-            wTX_change = x_j * (-max(-w_minus[j], -gradient - lmbda))
-            wTX = np.add(wTX, wTX_change)
-
-    return np.subtract(w_plus, w_minus)
 
 # Squared loss
 def loss_prime(a, y):
@@ -169,8 +153,6 @@ def squared_error(y, X, w):
         y2[i] = np.dot(X[i], w)
 
     diff = (y-y2)
-    print(y)
-    print(y2)
     sumError = np.sum(np.square(diff))
     return (sumError / X.shape[0])
 
