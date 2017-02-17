@@ -48,14 +48,14 @@ def main():
 
     lambdaValues = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, .4]
     results = [0, 0, 0, 0, 0, 0, 0, 0]
-    results[0] = squared_error(y, signals_train, scd(.05, y, signals_train, weights, z, 10))
-    results[1] = squared_error(y, signals_train, scd(.1, y, signals_train, weights, z, 10))
-    results[2] = squared_error(y, signals_train, scd(.15, y, signals_train, weights, z, 10))
-    results[3] = squared_error(y, signals_train, scd(.2, y, signals_train, weights, z, 10))
-    results[4] = squared_error(y, signals_train, scd(.25, y, signals_train, weights, z, 10))
-    results[5] = squared_error(y, signals_train, scd(.3, y, signals_train, weights, z, 10))
-    results[6] = squared_error(y, signals_train, scd(.35, y, signals_train, weights, z, 10))
-    results[7] = squared_error(y, signals_train, scd(.4, y, signals_train, weights, z, 10))
+    results[0] = squared_error(y, signals_train, scd(.05, y, signals_train, weights, z, 20))
+    results[1] = squared_error(y, signals_train, scd(.1, y, signals_train, weights, z, 20))
+    results[2] = squared_error(y, signals_train, scd(.15, y, signals_train, weights, z, 20))
+    results[3] = squared_error(y, signals_train, scd(.2, y, signals_train, weights, z, 20))
+    results[4] = squared_error(y, signals_train, scd(.25, y, signals_train, weights, z, 20))
+    results[5] = squared_error(y, signals_train, scd(.3, y, signals_train, weights, z, 20))
+    results[6] = squared_error(y, signals_train, scd(.35, y, signals_train, weights, z, 20))
+    results[7] = squared_error(y, signals_train, scd(.4, y, signals_train, weights, z, 20))
 
     plt.plot(lambdaValues, results)
     plt.savefig('squaredErrorTraining.png')
@@ -102,6 +102,7 @@ def scd(lmbda, y, X, w, z, num_iterations):
     w_minus = np.zeros([num_attributes]) # 21xxx x 1 vector
     w_plus = np.zeros([num_attributes]) # 21xxx x 1 vector
     w_old = np.copy(w) # 21xxx x 1 vector
+    # Keep track of wTX so that you only compute dot product once
     wTX = np.dot(X, w) # 300 x 1 vector
 
     # While not converged
@@ -111,27 +112,43 @@ def scd(lmbda, y, X, w, z, num_iterations):
             # Pick a random j from 0 to 2*num_attributes - 1
             j = randint(0, (num_attributes * 2) - 1)
 
+            # Left half so w(plus)
             if (j < num_attributes):
-                x_j = X[:, j] # 300 x 1 vector
-                diff = np.subtract(wTX, y)
-                gradient = np.dot(x_j, diff) / num_values * 1.0
-                max_add = max(-w_plus[j], -gradient - lmbda)
-                w_plus[j] += max_add
-                wTX_change = x_j * max_add
-                wTX = np.add(wTX, wTX_change)
-            else:
-                j = j - num_attributes
+                # Get jth column
                 x_j = X[:, j]
+                # Gradient = 1/n * x_j * (xw(plus) - y) + lambda
                 diff = np.subtract(wTX, y)
-                gradient = -1.0 * np.dot(x_j, diff) / num_values
-                max_add = max(-w_minus[j], -gradient - lmbda)
+                gradient = np.dot(x_j, diff) / num_values * 1.0 + lmbda
+                # Max of -w~[j] and -gradient. Since j < num_attributes, w~ is w_plus 
+                max_add = max(-w_plus[j], -gradient)
+                # Update w~[j] (in this case w_plus[j])
+                w_plus[j] += max_add
+                # Update wTX because w in this is w~, but we shouldn't do dot product every time
+                # Only one column of w changed so update x_j column with new weight and add to wTX
+                wTX = np.add(wTX, max_add * x_j)
+
+            # Right half so w(minus)
+            else:
+                # Align j properly
+                j = j - num_attributes
+                # Get jth column
+                x_j = X[:, j]
+                # Gradient = -1/n * x_j * (xw(minus) - y) + lambda
+                diff = np.subtract(wTX, y)
+                gradient = -1.0 * np.dot(x_j, diff) / num_values + lmbda
+                # Max of -w~[j] and -gradient. Since j >= p, w~ is w_minus
+                max_add = max(-w_minus[j], -gradient)
+                # Update w~[j] (in this case w_minus[j])
                 w_minus[j] +=  max_add
-                wTX_change = x_j * -max_add
-                wTX = np.add(wTX, wTX_change)
+                # W~ = w_plus - w_minus. So to update completely, subtract correct amount
+                # Only one column of w changed so update x_j column with new weight and subtract from wTX
+                wTX = np.subtract(wTX, max_add * x_j)
 
         current_iteration += 1
+        # w~ = w_plus - w_minus
         w = np.subtract(w_plus, w_minus)
 
+        # Hit convergence before all the iterations are over
         if np.linalg.norm(np.subtract(w, w_old)) < 10 ** -6:
             break
         w_old = np.copy(w)
@@ -139,13 +156,6 @@ def scd(lmbda, y, X, w, z, num_iterations):
         print(current_iteration)
 
     return w
-
-
-
-
-# Squared loss
-def loss_prime(a, y):
-    return a - y
 
 def squared_error(y, X, w):
     y2 = np.copy(y)
