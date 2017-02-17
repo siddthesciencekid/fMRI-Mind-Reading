@@ -42,11 +42,18 @@ def main():
 
     y = np.asarray(y)
     print(len(signals_train[0]))
-    weights = np.random.normal(0, 1, len(signals_train[0]))
+    weights = np.zeros([len(signals_train[0])])
+    z = np.zeros([len(y)])
 
-    weights = lasso(100, y, signals_train, weights)
+    weights = scd(10, y, signals_train, weights, z, 1, .01)
 
     print(weights)
+    print(np.count_nonzero(weights))
+
+
+    print(weights)
+    print(np.count_nonzero(weights))
+
     print(signals_train.shape)
     print(signals_test.shape)
     print(words_train.shape)
@@ -68,13 +75,12 @@ def lasso(lmbda, y, X, weights):
     while not converged:
         converged = True
         for j in range(0, len(X[0])):
-            print(j)
             cur_column = X[:, j]
             # Compute the a term for the current column
             a_j = 2 * np.sum(cur_column ** 2)
             # Compute the W Transpose times all rows in X
             wTX = np.dot(X, weights)
-            # Compute y_i - wTX + the wieght at j for the particular entry
+            # Compute y_i - wTX + the weight at j for the particular entry
             temp = y - wTX + np.multiply(weights[j], cur_column)
             # Finally compute c_j
             c_j = 2 * np.sum(cur_column * temp)
@@ -85,36 +91,35 @@ def lasso(lmbda, y, X, weights):
             if abs(weights[j] - new_weight) > 10 ** -6:
                 converged = False
             weights[j] = new_weight
-        print(np.count_nonzero(weights))
     return weights
+
 
 def scd(lmbda, y, X, w, z, num_epochs, step_size):
     for t in range(num_epochs):
         # Pick a random j
-        j = randint(0, len(X[0]) - 1)
-        beta = 1 # 1 for squared loss
-        sum = 0
-        for i in range(len(y)):
-            if X[i][j] != 0:
-                sum += (loss_prime(z[i], y[i]) * X[i][j])
-        g_j = (1/len(y)) * sum
-        update_term = w[j] - g_j / beta
-        if update_term > lmbda / beta:
-            w[j] = update_term - lmbda / beta
-        elif update_term < lmbda / beta:
-            w[j] = update_term + lmbda / beta
-        else:
-            w[j] = 0
-
-        for i in range(len(y)):
-            if X[i][j] != 0:
-                z[i] = z[i] + step_size * X[i][j]
+        for j in range(len(X[0])):
+            beta = 1 # 1 for squared loss
+            sum = 0
+            for i in range(len(y)):
+                if X[i][j] != 0:
+                    sum += (loss_prime(z[i], y[i]) * X[i][j])
+            g_j = (1/float(len(y))) * sum
+            update_term = w[j] - g_j / beta
+            print(update_term)
+            if update_term > (lmbda / beta):
+                w[j] = update_term - (lmbda / beta)
+            elif update_term < -(lmbda / beta):
+                w[j] = update_term + (lmbda / beta)
+            else:
+                w[j] = 0
+            for i in range(len(y)):
+                if X[i][j] != 0:
+                    z[i] = z[i] + step_size * X[i][j]
 
     return w
 
-
-
-def loss_prime(a, y): # Squared loss
+# Squared loss
+def loss_prime(a, y):
     return a - y
 
 if __name__ == "__main__":
