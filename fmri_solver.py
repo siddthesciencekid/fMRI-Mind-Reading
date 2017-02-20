@@ -44,22 +44,26 @@ def main():
 
     y = np.asarray(y)
     weights = np.zeros([len(signals_train[0])])
-    z = np.zeros([len(y)])
 
-    lambdaValues = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, .4]
-    results = [0, 0, 0, 0, 0, 0, 0, 0]
-    results[0] = squared_error(y, signals_train, scd(.05, y, signals_train, weights, z, 20))
-    results[1] = squared_error(y, signals_train, scd(.1, y, signals_train, weights, z, 20))
-    results[2] = squared_error(y, signals_train, scd(.15, y, signals_train, weights, z, 20))
-    results[3] = squared_error(y, signals_train, scd(.2, y, signals_train, weights, z, 20))
-    results[4] = squared_error(y, signals_train, scd(.25, y, signals_train, weights, z, 20))
-    results[5] = squared_error(y, signals_train, scd(.3, y, signals_train, weights, z, 20))
-    results[6] = squared_error(y, signals_train, scd(.35, y, signals_train, weights, z, 20))
-    results[7] = squared_error(y, signals_train, scd(.4, y, signals_train, weights, z, 20))
 
-    plt.plot(lambdaValues, results)
-    plt.savefig('squaredErrorTraining.png')
-    plt.close()
+#    lambdaValues = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, .4]
+#    results = [0, 0, 0, 0, 0, 0, 0, 0]
+#    results[0] = squared_error(y, signals_train, scd(.05, y, signals_train, weights, 20))
+#    results[1] = squared_error(y, signals_train, scd(.1, y, signals_train, weights, 20))
+#    results[2] = squared_error(y, signals_train, scd(.15, y, signals_train, weights, 20))
+#    results[3] = squared_error(y, signals_train, scd(.2, y, signals_train, weights, 20))
+#    results[4] = squared_error(y, signals_train, scd(.25, y, signals_train, weights, 20))
+#    results[5] = squared_error(y, signals_train, scd(.3, y, signals_train, weights, 20))
+#    results[6] = squared_error(y, signals_train, scd(.35, y, signals_train, weights, 20))
+#    results[7] = squared_error(y, signals_train, scd(.4, y, signals_train, weights, 20))
+
+#    plt.plot(lambdaValues, results)
+#    plt.savefig('squaredErrorTraining.png')
+#    plt.close()
+
+    print(squared_error(pgd(.05, y, signals_train, weights, .5), y, signals_train))
+    print(squared_error(pgd(.05, y, signals_train, weights, .5), y, signals_train))
+    print(weights)
 
 
 def soft_threshold(a_j, c_j, lmbda):
@@ -94,7 +98,8 @@ def lasso(lmbda, y, X, weights):
             weights[j] = new_weight
     return weights
 
-def scd(lmbda, y, X, w, z, num_iterations):
+
+def scd(lmbda, y, X, w, num_iterations):
     num_attributes = len(X[0])
     num_values = len(y)
     current_iteration = 0
@@ -168,14 +173,34 @@ def scd(lmbda, y, X, w, z, num_iterations):
 
     return w
 
-def squared_error(y, X, w):
-    y2 = np.copy(y)
-    for i in range(X.shape[0]):
-        y2[i] = np.dot(X[i], w)
+# Proximal Gradient Descent for LASSO
+def pgd(lmbda, y, X, w, step_size):
+    converged = False
+    w_old = np.copy(w)
+    for i in range(100):
+        converged = True
+        temp = np.subtract(np.dot(X, w), y)
+        gradient = np.dot(np.transpose(X), temp)
+        w = soft_threshold_pgd(np.subtract(w, step_size * gradient), step_size * lmbda)
+        # if abs(np.subtract(w, w_old)) > 10 ** -2:
+        #    converged = False
+        w_old = np.copy(w)
+    return w
 
-    diff = (y-y2)
-    sumError = np.sum(np.square(diff))
-    return (sumError / X.shape[0])
+
+def soft_threshold_pgd(a, z):
+    sign = np.sign(a)
+    abs_vector = np.subtract(np.absolute(a), z)
+    return sign * np.maximum(abs_vector, np.zeros(np.shape(a)))
+
+
+def squared_error(weights, y, X):
+    total_error = 0
+    for i in range(0, len(y)):
+        cur_row = X[i, :]
+        error = (y[i] - np.dot(cur_row, weights)) ** 2
+        total_error += error
+    return total_error
 
 if __name__ == "__main__":
     main()
