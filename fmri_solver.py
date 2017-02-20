@@ -58,21 +58,21 @@ def main():
     plt.plot(lambdaValues, results)
     plt.savefig('squaredErrorTraining_SCD.png')
     plt.close()
-    results[0] = squared_error(y, signals_train, pgd(.05, y, signals_train, weights, 20))
-    results[1] = squared_error(y, signals_train, pgd(.1, y, signals_train, weights, 20))
-    results[2] = squared_error(y, signals_train, pgd(.15, y, signals_train, weights, 20))
-    results[3] = squared_error(y, signals_train, pgd(.2, y, signals_train, weights, 20))
-    results[4] = squared_error(y, signals_train, pgd(.25, y, signals_train, weights, 20))
-    results[5] = squared_error(y, signals_train, pgd(.3, y, signals_train, weights, 20))
-    results[6] = squared_error(y, signals_train, pgd(.35, y, signals_train, weights, 20))
-    results[7] = squared_error(y, signals_train, pgd(.4, y, signals_train, weights, 20))
+    results[0] = squared_error(y, signals_train, pgd(.05, y, signals_train, weights, 20, 1000))
+    results[1] = squared_error(y, signals_train, pgd(.1, y, signals_train, weights, 20, 1000))
+    results[2] = squared_error(y, signals_train, pgd(.15, y, signals_train, weights, 20, 1000))
+    results[3] = squared_error(y, signals_train, pgd(.2, y, signals_train, weights, 20, 1000))
+    results[4] = squared_error(y, signals_train, pgd(.25, y, signals_train, weights, 20,1000))
+    results[5] = squared_error(y, signals_train, pgd(.3, y, signals_train, weights, 20, 1000))
+    results[6] = squared_error(y, signals_train, pgd(.35, y, signals_train, weights, 20, 1000))
+    results[7] = squared_error(y, signals_train, pgd(.4, y, signals_train, weights, 20, 1000))
     plt.plot(lambdaValues, results)
     plt.savefig('squaredErrorTraining_PGD.png')
     plt.close()
 
 
 
-def soft_threshold(a_j, c_j, lmbda):
+def soft_threshold_lasso(a_j, c_j, lmbda):
     if c_j < -lmbda:
         return (c_j + lmbda) / a_j
     elif -lmbda <= c_j <= lmbda:
@@ -98,13 +98,13 @@ def lasso(lmbda, y, X, weights):
 
             # Get the new weight for this entry and check
             # to see if the change was bigger than our epsilon
-            new_weight = soft_threshold(a_j, c_j, lmbda)
+            new_weight = soft_threshold_lasso(a_j, c_j, lmbda)
             if abs(weights[j] - new_weight) > 10 ** -6:
                 converged = False
             weights[j] = new_weight
     return weights
 
-
+# Stochastic Coordinate Descent for Lasso
 def scd(lmbda, y, X, w, num_iterations):
     num_attributes = len(X[0])
     num_values = len(y)
@@ -132,7 +132,6 @@ def scd(lmbda, y, X, w, num_iterations):
             # we update w_plus and w_minus after every random pick of j. However, computing the dot product every single
             # run of every iteration takes very long. So we will keep track of w_transpose * X, and when we update w_plus and w_minus,
             # we either add w_plus * x_j or subtract w_minus * x_j >> leads to the same thing much faster. **
-
 
             # Left half so w(plus)
             if (j < num_attributes):
@@ -175,68 +174,64 @@ def scd(lmbda, y, X, w, num_iterations):
             break
         w_old = np.copy(w)
 
-        print(current_iteration)
-
     return w
 
+def line_search(X, w, y, step_size, w_new):
+    f_xk = res_sum_square(X, w, y)
+    fit_gradient = np.dot((np.dot(X.T, np.dot(X,w.T) - y)).T, (w_new - w).T)
+    fit_fx = (np.linalg.norm(w_new - w) ** 2) / (2 * step_size)
+    return f_xk + fit_gradient + fit_fx
 
-def m_func(A, x_k, b, step_length, x):
-    part_1 = f_func(A,x_k,b)
-    part_2 = np.dot( (np.dot(A.T, np.dot(A,x_k.T) - b)).T, (x-x_k).T )
-    part_3 = (np.linalg.norm(x-x_k)**2) / (2*step_length)
-    m_value = part_1 + part_2 + part_3
-    return m_value
-
-def f_func(A, x, b):
-	f_value = (np.linalg.norm(np.dot(A,x.T) - b)**2) / 2
-	return f_value
-
-def sign(y):
-	cy = np.copy(y)
-	length = len(cy)
-	for i in range(length):
-		if cy[i] > 0.0:
-			cy[i] = 1.0
-		elif cy[i] < 0.0:
-			cy[i] = -1.0
-		else:
-			cy[i] = 0.0
-	return cy
+# RSS: ||wX - y||^2 (Measure of fit)
+def res_sum_square(X, w, y):
+	return (np.linalg.norm(np.dot(X, w.T) - y)**2)
 
 # Proximal Gradient Descent for LASSO
-def pgd(lmbda, y, X, w, step_size):
+def pgd(lmbda, y, X, w, step_size, num_iterations):
 	current_iteration = 0
-	num_iterations = 2000
 	w_new = np.copy(w)
-
+	beta = .5
+	# our total cost is f(x) + lambda * l1 penalty = RSS(w) + lambda*l1penalty
+	# References to f(x) are to the RSS(w)
 	while (current_iteration < num_iterations):
 		# Compute gradients while picking correct stepsize
-		f_value = 100
-		m_value = 0
-		while (f_value > m_value):
-			gradient = w - step_size * np.dot(X.T, np.dot(X, w) - y)
-			w_new = sign(gradient) * vector_max(0, np.absolute(gradient) - step_size * lmbda)
-			print(w_new)
-			f_value = f_func(X, w_new, y)
-			m_value = m_func(X, w, y, step_size, w_new)
-			step_size = step_size * .5
+		f_xk1 = 100
+		line_search_value = 0
+		# Pick correct stepsize using Armijo's rule, ends when f(x^k+1) <= f(x^k) - 1/2(1/step_size)*||gradient(f(x^k))||^2
+		while (f_xk1 > line_search_value):
+			# Compute the gradient vector. X^T*(Xw - y)
+			# In the book this is described as g_k
+			g_k = np.dot(X.T, np.dot(X, w) - y)
+			# Subtract gradient * step_size from current vector of w
+			# In the book this is described as u_k
+			u_k = w - step_size * g_k
 
-		if f_func(X, w, y) <= f_func(X, w_new, y):
+			# Soft thresholding element-wise: soft(gradient, step_size * lambda)
+			# Since the penalty is L1, this is the proximal operator.
+			w_new = np.sign(u_k) * v_max(np.absolute(u_k) - step_size * lmbda)
+
+			# Use line search to update the step size
+			# Using Armijo's rule
+			# Stop when f(x^k+1) <= f(x^k) - 1/2(1/step_size)*||gradient(f(x^k))||^2
+			f_xk1 = res_sum_square(X, w_new, y)
+			f_xk = res_sum_square(X, w, y)
+			line_search_value = line_search(X, w, y, step_size, w_new)
+			step_size = step_size * beta
+
+		# Converged, exit while loop
+		if res_sum_square(X, w, y) <= res_sum_square(X, w_new, y):
 			current_iteration = num_iterations
 		else:
 			w = np.copy(w_new)
-
 	return w
 
-def vector_max(value, vector):
+def v_max(vector):
 	for i in range(len(vector)):
-		vector[i] = max(value, vector[i])
+		vector[i] = max(0, vector[i])
 	return vector
 
 def squared_error(y, X, weights):
 	y2 = np.copy(y)
-	print(X.shape)
-	print(weights.shape)
 	for i in range(X.shape[0]):
 		y2[i] = np.dot(X[i], weights)
 
