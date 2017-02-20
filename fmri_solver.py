@@ -37,14 +37,14 @@ def main():
     y = np.zeros([len(words_train)])
     for i in range(len(words_train)):
         word_index = words_train[i]
-        y[i] = semantic_features[word_index - 1][99]
+        y[i] = semantic_features[word_index - 1][199]
 
     # Build the y vector for test data
     y_test = np.zeros([len(words_test)])
     for i in range(len(words_test)):
         word_index = words_test[i][0]
         word_index = int(word_index)
-        y_test[i] = semantic_features[word_index - 1][99]
+        y_test[i] = semantic_features[word_index - 1][199]
  
 
     y = np.asarray(y)
@@ -56,29 +56,29 @@ def main():
     #Plotting test error vs lambda for SCD and PGD
     lambdaValues = [.05, .1, .15, .2, .25, .3, .35, .4]
     results = [0, 0, 0, 0, 0, 0, 0, 0]
-    results[0] = squared_error(y_test, signals_test, scd(.05, y, signals_train, weights, 20))
-    results[1] = squared_error(y_test, signals_test, scd(.1, y, signals_train, weights, 20))
-    results[2] = squared_error(y_test, signals_test, scd(.15, y, signals_train, weights, 20))
-    results[3] = squared_error(y_test, signals_test, scd(.2, y, signals_train, weights, 20))
-    results[4] = squared_error(y_test, signals_test, scd(.25, y, signals_train, weights, 20))
-    results[5] = squared_error(y_test, signals_test, scd(.3, y, signals_train, weights, 20))
-    results[6] = squared_error(y_test, signals_test, scd(.35, y, signals_train, weights, 20))
-    results[7] = squared_error(y_test, signals_test, scd(.4, y, signals_train, weights, 20))
+    results[0] = np.count_nonzero(scd(.05, y, signals_train, weights, 20))
+    results[1] = np.count_nonzero(scd(.1, y, signals_train, weights, 20))
+    results[2] = np.count_nonzero(scd(.15, y, signals_train, weights, 20))
+    results[3] = np.count_nonzero(scd(.2, y, signals_train, weights, 20))
+    results[4] = np.count_nonzero(scd(.25, y, signals_train, weights, 20))
+    results[5] = np.count_nonzero(scd(.3, y, signals_train, weights, 20))
+    results[6] = np.count_nonzero(scd(.35, y, signals_train, weights, 20))
+    results[7] = np.count_nonzero(scd(.4, y, signals_train, weights, 20))
     plt_SCD.plot(lambdaValues, results, label = "SCD")
-    plt_SCD.savefig('squaredErrorTest_SCD_sem100.png')
+    plt_SCD.savefig('numNonZero_SCD_sem200.png')
     plt_SCD.close()
 
     results = [0, 0, 0, 0, 0, 0, 0, 0]
-    results[0] = squared_error(y_test, signals_test, pgd(.05, y, signals_train, weights, 20, 1000))
-    results[1] = squared_error(y_test, signals_test, pgd(.1, y, signals_train, weights, 20, 1000))
-    results[2] = squared_error(y_test, signals_test, pgd(.15, y, signals_train, weights, 20, 1000))
-    results[3] = squared_error(y_test, signals_test, pgd(.2, y, signals_train, weights, 20, 1000))
-    results[4] = squared_error(y_test, signals_test, pgd(.25, y, signals_train, weights, 20, 1000))
-    results[5] = squared_error(y_test, signals_test, pgd(.3, y, signals_train, weights, 20, 1000))
-    results[6] = squared_error(y_test, signals_test, pgd(.35, y, signals_train, weights, 20, 1000))
-    results[7] = squared_error(y_test, signals_test, pgd(.4, y, signals_train, weights, 20, 1000))
+    results[0] = np.count_nonzero(pgd(.05, y, signals_train, weights, 20, 1000))
+    results[1] = np.count_nonzero(pgd(.1, y, signals_train, weights, 20, 1000))
+    results[2] = np.count_nonzero(pgd(.15, y, signals_train, weights, 20, 1000))
+    results[3] = np.count_nonzero(pgd(.2, y, signals_train, weights, 20, 1000))
+    results[4] = np.count_nonzero(pgd(.25, y, signals_train, weights, 20, 1000))
+    results[5] = np.count_nonzero(pgd(.3, y, signals_train, weights, 20, 1000))
+    results[6] = np.count_nonzero(pgd(.35, y, signals_train, weights, 20, 1000))
+    results[7] = np.count_nonzero(pgd(.4, y, signals_train, weights, 20, 1000))
     plt_PGD.plot(lambdaValues, results, label = "PGD")
-    plt_PGD.savefig('squaredErrorTest_PGD_sem100.png')
+    plt_PGD.savefig('numNonZero_PGD_sem200.png')
     plt_PGD.close()
 
 def soft_threshold_lasso(a_j, c_j, lmbda):
