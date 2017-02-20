@@ -46,24 +46,23 @@ def main():
     weights = np.zeros([len(signals_train[0])])
 
 
-#    lambdaValues = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, .4]
-#    results = [0, 0, 0, 0, 0, 0, 0, 0]
-#    results[0] = squared_error(y, signals_train, scd(.05, y, signals_train, weights, 20))
-#    results[1] = squared_error(y, signals_train, scd(.1, y, signals_train, weights, 20))
-#    results[2] = squared_error(y, signals_train, scd(.15, y, signals_train, weights, 20))
-#    results[3] = squared_error(y, signals_train, scd(.2, y, signals_train, weights, 20))
-#    results[4] = squared_error(y, signals_train, scd(.25, y, signals_train, weights, 20))
-#    results[5] = squared_error(y, signals_train, scd(.3, y, signals_train, weights, 20))
-#    results[6] = squared_error(y, signals_train, scd(.35, y, signals_train, weights, 20))
-#    results[7] = squared_error(y, signals_train, scd(.4, y, signals_train, weights, 20))
+   # lambdaValues = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, .4]
+   # results = [0, 0, 0, 0, 0, 0, 0, 0]
+   # results[0] = squared_error(y, signals_train, scd(.05, y, signals_train, weights, 20))
+   # results[1] = squared_error(y, signals_train, scd(.1, y, signals_train, weights, 20))
+   # results[2] = squared_error(y, signals_train, scd(.15, y, signals_train, weights, 20))
+   # results[3] = squared_error(y, signals_train, scd(.2, y, signals_train, weights, 20))
+   # results[4] = squared_error(y, signals_train, scd(.25, y, signals_train, weights, 20))
+   # results[5] = squared_error(y, signals_train, scd(.3, y, signals_train, weights, 20))
+   # results[6] = squared_error(y, signals_train, scd(.35, y, signals_train, weights, 20))
+   # results[7] = squared_error(y, signals_train, scd(.4, y, signals_train, weights, 20))
 
-#    plt.plot(lambdaValues, results)
-#    plt.savefig('squaredErrorTraining.png')
-#    plt.close()
+   # plt.plot(lambdaValues, results)
+   # plt.savefig('squaredErrorTraining.png')
+   # plt.close()
 
-    print(squared_error(pgd(.05, y, signals_train, weights, .5), y, signals_train))
-    print(squared_error(pgd(.05, y, signals_train, weights, .5), y, signals_train))
-    print(weights)
+    print(squared_error(pgd(10, y, signals_train, weights, 1), y, signals_train))
+    print(squared_error(pgd(100, y, signals_train, weights, 1), y, signals_train))
 
 
 def soft_threshold(a_j, c_j, lmbda):
@@ -173,26 +172,59 @@ def scd(lmbda, y, X, w, num_iterations):
 
     return w
 
+
+def m_func(A, x_k, b, step_length, x):
+    part_1 = f_func(A,x_k,b)
+    part_2 = np.dot( (np.dot(A.T, np.dot(A,x_k.T) - b)).T, (x-x_k).T )
+    part_3 = (np.linalg.norm(x-x_k)**2) / (2*step_length)
+    m_value = part_1 + part_2 + part_3
+    return m_value
+
+def f_func(A, x, b):
+	f_value = (np.linalg.norm(np.dot(A,x.T) - b)**2) / 2
+	return f_value
+
+def sign(y):
+	cy = np.copy(y)
+	length = len(cy)
+	for i in range(length):
+		if cy[i] > 0.0:
+			cy[i] = 1.0
+		elif cy[i] < 0.0:
+			cy[i] = -1.0
+		else:
+			cy[i] = 0.0
+	return cy
+
 # Proximal Gradient Descent for LASSO
 def pgd(lmbda, y, X, w, step_size):
-    converged = False
-    w_old = np.copy(w)
-    for i in range(100):
-        converged = True
-        temp = np.subtract(np.dot(X, w), y)
-        gradient = np.dot(np.transpose(X), temp)
-        w = soft_threshold_pgd(np.subtract(w, step_size * gradient), step_size * lmbda)
-        # if abs(np.subtract(w, w_old)) > 10 ** -2:
-        #    converged = False
-        w_old = np.copy(w)
-    return w
+	current_iteration = 0
+	num_iterations = 2000
+	w_new = np.copy(w)
 
+	while (current_iteration < num_iterations):
+		# Compute gradients while picking correct stepsize
+		f_value = 100
+		m_value = 0
+		while (f_value > m_value):
+			gradient = w - step_size * np.dot(X.T, np.dot(X, w) - y)
+			w_new = sign(gradient) * vector_max(0, np.absolute(gradient) - step_size * lmbda)
+			print(w_new)
+			f_value = f_func(X, w_new, y)
+			m_value = m_func(X, w, y, step_size, w_new)
+			step_size = step_size * .5
 
-def soft_threshold_pgd(a, z):
-    sign = np.sign(a)
-    abs_vector = np.subtract(np.absolute(a), z)
-    return sign * np.maximum(abs_vector, np.zeros(np.shape(a)))
+		if f_func(X, w, y) <= f_func(X, w_new, y):
+			current_iteration = num_iterations
+		else:
+			w = np.copy(w_new)
 
+	return w
+
+def vector_max(value, vector):
+	for i in range(len(vector)):
+		vector[i] = max(value, vector[i])
+	return vector
 
 def squared_error(weights, y, X):
     total_error = 0
