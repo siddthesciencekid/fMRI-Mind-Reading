@@ -7,8 +7,9 @@ import scipy.io
 import numpy as np
 from random import randint
 
-from matplotlib import pyplot as plt
-
+from matplotlib import pyplot as plt_training
+from matplotlib import pyplot as plt_test_PGD
+from matplotlib import pyplot as plt_test_SCD
 
 def import_words_train(file_name, array):
     f = open(file_name)
@@ -32,45 +33,54 @@ def main():
     
     semantic_features = scipy.io.mmread("data/word_feature_centered.mtx")
 
-    # Build the y component of the lasso algorithm
-    # for the first semantic feature
-
+       # Build the y component of the lasso algorithm for the FIRST semantic feature
     y = np.zeros([len(words_train)])
-
-
     for i in range(len(words_train)):
         word_index = words_train[i]
+        print(word_index)
         y[i] = semantic_features[word_index - 1][0]
 
+    # Build the y vector for test data
+    y_test = np.zeros([len(words_test)])
+    for i in range(len(words_test)):
+        word_index = words_test[i][0]
+        word_index = int(word_index)
+        y_test[i] = semantic_features[word_index - 1][0]
+ 
+
     y = np.asarray(y)
+    y_test = np.asarray(y_test)
+
     weights = np.zeros([len(signals_train[0])])
 
+    
+    #Plotting test error vs lambda for SCD and PGD
     lambdaValues = [.05, .1, .15, .2, .25, .3, .35, .4]
     results = [0, 0, 0, 0, 0, 0, 0, 0]
-    results[0] = squared_error(y, signals_train, scd(.05, y, signals_train, weights, 20))
-    results[1] = squared_error(y, signals_train, scd(.1, y, signals_train, weights, 20))
-    results[2] = squared_error(y, signals_train, scd(.15, y, signals_train, weights, 20))
-    results[3] = squared_error(y, signals_train, scd(.2, y, signals_train, weights, 20))
-    results[4] = squared_error(y, signals_train, scd(.25, y, signals_train, weights, 20))
-    results[5] = squared_error(y, signals_train, scd(.3, y, signals_train, weights, 20))
-    results[6] = squared_error(y, signals_train, scd(.35, y, signals_train, weights, 20))
-    results[7] = squared_error(y, signals_train, scd(.4, y, signals_train, weights, 20))
-    plt.plot(lambdaValues, results)
-    plt.savefig('squaredErrorTraining_SCD.png')
-    plt.close()
-    results[0] = squared_error(y, signals_train, pgd(.05, y, signals_train, weights, 20, 1000))
-    results[1] = squared_error(y, signals_train, pgd(.1, y, signals_train, weights, 20, 1000))
-    results[2] = squared_error(y, signals_train, pgd(.15, y, signals_train, weights, 20, 1000))
-    results[3] = squared_error(y, signals_train, pgd(.2, y, signals_train, weights, 20, 1000))
-    results[4] = squared_error(y, signals_train, pgd(.25, y, signals_train, weights, 20,1000))
-    results[5] = squared_error(y, signals_train, pgd(.3, y, signals_train, weights, 20, 1000))
-    results[6] = squared_error(y, signals_train, pgd(.35, y, signals_train, weights, 20, 1000))
-    results[7] = squared_error(y, signals_train, pgd(.4, y, signals_train, weights, 20, 1000))
-    plt.plot(lambdaValues, results)
-    plt.savefig('squaredErrorTraining_PGD.png')
-    plt.close()
+    results[0] = squared_error(y_test, signals_test, scd(.05, y, signals_train, weights, 20))
+    results[1] = squared_error(y_test, signals_test, scd(.1, y, signals_train, weights, 20))
+    results[2] = squared_error(y_test, signals_test, scd(.15, y, signals_train, weights, 20))
+    results[3] = squared_error(y_test, signals_test, scd(.2, y, signals_train, weights, 20))
+    results[4] = squared_error(y_test, signals_test, scd(.25, y, signals_train, weights, 20))
+    results[5] = squared_error(y_test, signals_test, scd(.3, y, signals_train, weights, 20))
+    results[6] = squared_error(y_test, signals_test, scd(.35, y, signals_train, weights, 20))
+    results[7] = squared_error(y_test, signals_test, scd(.4, y, signals_train, weights, 20))
+    plt_test_SCD.plot(lambdaValues, results, label = "SCD")
+    plt_test_SCD.savefig('squaredErrorTest_SCD.png')
+    plt_test_SCD.close()
 
-
+    results = [0, 0, 0, 0, 0, 0, 0, 0]
+    results[0] = squared_error(y_test, signals_test, pgd(.05, y, signals_train, weights, 20, 1000))
+    results[1] = squared_error(y_test, signals_test, pgd(.1, y, signals_train, weights, 20, 1000))
+    results[2] = squared_error(y_test, signals_test, pgd(.15, y, signals_train, weights, 20, 1000))
+    results[3] = squared_error(y_test, signals_test, pgd(.2, y, signals_train, weights, 20, 1000))
+    results[4] = squared_error(y_test, signals_test, pgd(.25, y, signals_train, weights, 20, 1000))
+    results[5] = squared_error(y_test, signals_test, pgd(.3, y, signals_train, weights, 20, 1000))
+    results[6] = squared_error(y_test, signals_test, pgd(.35, y, signals_train, weights, 20, 1000))
+    results[7] = squared_error(y_test, signals_test, pgd(.4, y, signals_train, weights, 20, 1000))
+    plt_test_PGD.plot(lambdaValues, results, label = "PGD")
+    plt_test_PGD.savefig('squaredErrorTest_PGD.png')
+    plt_test_PGD.close()
 
 def soft_threshold_lasso(a_j, c_j, lmbda):
     if c_j < -lmbda:
