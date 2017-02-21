@@ -28,28 +28,38 @@ def main():
     
     semantic_features = scipy.io.mmread("data/word_feature_centered.mtx")
 
-    # Build the y component of the lasso algorithm for the 200th semantic feature
-    y = np.zeros([len(words_train)])
-    for i in range(len(words_train)):
-        word_index = words_train[i]
-        y[i] = semantic_features[word_index - 1][199]
+    # TODO: Explain what is being called here
+    plot_semantic_feature_squared_error(signals_test, signals_train,
+                                        words_train, words_train, semantic_features, True)
+
+
+def plot_semantic_feature_squared_error(signals_test, signals_train,
+                                        words_train, words_test, semantic_features, isPGD):
+    semantic_features_map = {"Feature 1": [], "Feature 100": [], "Feature 200": []}
+    semantic_features_to_test = [0, 99, 199]
+
+    # Build the y component of the lasso algorithm for the test semantic features
+    y = np.zeros((3, len(words_train)))
+    for i in range(len(y)):
+        for j in range(len(words_train)):
+            cur_feature = semantic_features_to_test[i]
+            word_index = words_train[j]
+            y[i][j] = semantic_features[word_index - 1][cur_feature]
 
     # Build the y vector for test data
-    y_test = np.zeros([len(words_test)])
-    for i in range(len(words_test)):
-        word_index = words_test[i][0]
-        # Word test stores things as floats, and the lookup in semantic features doesn't work
-        # unless it is converted to int
-        word_index = int(word_index)
-        y_test[i] = semantic_features[word_index - 1][199]
- 
+    y_test = np.zeros((3, len(words_train)))
+    for i in range(len(y)):
+        for j in range(len(words_test)):
+            cur_feature = semantic_features_to_test[i]
+            word_index = words_test[j]
+            # Word test stores things as floats, and the lookup in semantic features doesn't work
+            # unless it is converted to int
+            word_index = int(word_index)
+            y_test[i][j] = semantic_features[word_index - 1][i]
 
-    y = np.asarray(y)
-    y_test = np.asarray(y_test)
+    weights = np.zeros((3, len(signals_train[0])))
 
-    weights = np.zeros([len(signals_train[0])])
-
-    lambdaValues = [.1, .5, 1, 5, 10, 20, 40, 100, 200]
+    lambda_values = [.1, .5, 1, 5, 10, 20, 40, 100, 200]
     results = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     results[0] = squared_error(y, signals_train, pgd(.1, y, signals_train, weights, 20, 20))
     results[1] = squared_error(y, signals_train, pgd(.5, y, signals_train, weights, 20, 20))
@@ -61,7 +71,7 @@ def main():
     results[7] = squared_error(y, signals_train, pgd(100, y, signals_train, weights, 20, 20))
     results[8] = squared_error(y, signals_train, pgd(200, y, signals_train, weights, 20, 20))
 
-    plt_PGD.plot(lambdaValues, results, label = "PGD")
+    plt_PGD.plot(lambda_values, results, label = "PGD")
     plt_PGD.savefig('squaredErrorTrain_PGD_sem200.png')
     plt_PGD.close()
 
@@ -77,13 +87,15 @@ def main():
     results[8] = squared_error(y_test, signals_test, pgd(200, y, signals_train, weights, 20, 20))
     print(results)
 
-    plt_PGD.plot(lambdaValues, results, label = "PGD")
+    plt_PGD.plot(lambda_values, results, label = "PGD")
     plt_PGD.savefig('squaredErrorTest_PGD_sem200.png')
     plt_PGD.close()
 
 
+
+
 # TODO: finish this function
-def plot_squared_error():
+def plot_squared_error(y, X):
     pass
 
 
