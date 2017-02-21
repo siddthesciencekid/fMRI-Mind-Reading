@@ -16,6 +16,7 @@ from pgd import pgd
 
 
 def main():
+    # READ IN DATA FROM DATA FILES INTO MATRICES
     signals_test = scipy.io.mmread("data/subject1_fmri_std.test.mtx")
     signals_train = scipy.io.mmread("data/subject1_fmri_std.train.mtx")
     words_test = scipy.io.mmread("data/subject1_wordid.test.mtx")
@@ -81,6 +82,8 @@ def main():
     plt_PGD.close()
 
 
+
+# Reads in the words train file into a veco
 def import_words_train(file_name, array):
     f = open(file_name)
     index = 0
@@ -91,6 +94,8 @@ def import_words_train(file_name, array):
     return array
 
 
+# Returns the squared error value for
+# a given model
 def squared_error(y, X, weights):
     y2 = np.copy(y)
     for i in range(X.shape[0]):
