@@ -82,8 +82,17 @@ def main():
     plt_PGD.close()
 
 
+# TODO: finish this function
+def plot_squared_error():
+    pass
 
-# Reads in the words train file into a veco
+
+# TODO: finish this function
+def plot_num_zero():
+    pass
+
+
+# Reads in the words train file into a vector
 def import_words_train(file_name, array):
     f = open(file_name)
     index = 0
