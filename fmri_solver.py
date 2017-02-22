@@ -9,6 +9,7 @@ import timeit
 import math
 
 from matplotlib import pyplot as plt
+from sklearn.model_selection import KFold
 from lasso import lasso
 from scd import scd
 from pgd import pgd
@@ -38,6 +39,7 @@ def main():
     lambda_values_pgd = [.1, .5, 1, 5, 10, 20, 40, 100, 200]
     lambda_values_scd = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, .4]
 
+
     plot_semantic_feature_squared_error(signals_test, signals_train,
                                         words_test, words_train, semantic_features,
                                         lambda_values_scd, False)
@@ -47,6 +49,26 @@ def main():
                                         lambda_values_pgd, True)
     '''
 
+    # TODO: START CROSS VALIDATION FOR ONE MODEL
+    # Performing 5 fold cross validation
+    K = 5
+
+    y = np.zeros((len(words_train), 1))
+    for i in range(len(words_train)):
+        word_index = words_train[i]
+        y[i][0] = semantic_features[word_index - 1][0]
+
+
+
+def k_fold_generator(X, y, k_fold):
+    subset_size = int(len(X) / k_fold)
+    for k in range(k_fold):
+        X_train = X[:k * subset_size] + X[(k + 1) * subset_size:]
+        X_valid = X[k * subset_size:][:subset_size]
+        y_train = y[:k * subset_size] + y[(k + 1) * subset_size:]
+        y_valid = y[k * subset_size:][:subset_size]
+
+        return X_train, y_train, X_valid, y_valid
 
 # Plots model fit data (squared test & train error and num nonzero
 # coefficients) about different lambda values for chosen semantic features
@@ -94,7 +116,7 @@ def plot_semantic_feature_squared_error(signals_test, signals_train,
             if is_pgd:
                 weights = pgd(cur_lambda, cur_y, signals_train, weights, 20, 20)
             else:
-                weights = scd(cur_lambda, cur_y, signals_train, weights, 20)
+                weights = scd(cur_lambda, cur_y, signals_train, weights, 30)
 
             # Collect performance metrics on the current model
             squared_error_train = squared_error(cur_y, signals_train, weights)
