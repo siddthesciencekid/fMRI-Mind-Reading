@@ -26,11 +26,6 @@ def scd(lmbda, y, X, w, num_iterations):
         # Pick a random j from 0 to 2*num_attributes - 1
         j = randint(0, (num_attributes * 2) - 1)
 
-        # ** Since w~ is [w_plus; w_minus], and X~ is [X, -X], we save a lot of space by doing the algorithm in terms of just X without replicating
-        # it.
-        # We have two cases: where j is in the 'left half', and where it is in the 'right half'. When it is in the left half,
-        # j < num_attributes, and we update w_plus. In the other case, we update w_minus, and because it is -X, the gradient's sign is flipped. **
-
         # ** We could use w = w_plus - w_minus and compute the dot product for the gradient every time, since
         # we update w_plus and w_minus after every random pick of j. However, computing the dot product every single
         # run of every iteration takes very long. So we will keep track of w_transpose * X, and when we update w_plus and w_minus,
