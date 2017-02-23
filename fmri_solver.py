@@ -3,8 +3,12 @@
 # CSE 446 Machine Learning
 # WINTER 2017
 
+# To build the model with k-fold cross validation call the script with the optional parameter kfold
+# i.e. fmri_solver.py kfold
+
 import scipy.io
 import numpy as np
+import sys
 import timeit
 import math
 
@@ -16,6 +20,14 @@ from pgd import pgd
 
 
 def main():
+    # To use kfold cross validation pass in kfold as a command line parameter
+    # Otherwise the best lambda tuning parameter value will be selected using the test set
+    # WARNING: ENABLING KFOLD CROSS VALIDATION SIGNIFICANTLY INCREASES THE RUN TIME OF THIS PROGRAM
+    if len(sys.argv) > 1:
+        use_k_fold = True if sys.argv[1] == "kfold" else False
+    else:
+        use_k_fold = False
+
     # READ IN DATA FROM DATA FILES INTO MATRICES
     signals_test = scipy.io.mmread("data/subject1_fmri_std.test.mtx")
     signals_train = scipy.io.mmread("data/subject1_fmri_std.train.mtx")
@@ -35,11 +47,10 @@ def main():
     # NOTE: LAMBDA values are different across the two
     # SET THE LAST PARAMETER TO FALSE TO PLOT MODEL FIT DATA USING SCD AND TRUE FOR PGD
 
-    '''
     lambda_values_pgd = [.1, .5, 1, 5, 10, 20, 40, 100, 200]
-    lambda_values_scd = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, .4]
+    lambda_values_scd = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
 
-
+    '''
     plot_semantic_feature_squared_error(signals_test, signals_train,
                                         words_test, words_train, semantic_features,
                                         lambda_values_scd, False)
@@ -49,26 +60,83 @@ def main():
                                         lambda_values_pgd, True)
     '''
 
-    # TODO: START CROSS VALIDATION FOR ONE MODEL
-    # Performing 5 fold cross validation
-    K = 5
+    y = np.zeros((len(semantic_features[0]), len(words_train)))
+    y_test = np.zeros((len(semantic_features[0]), len(words_test)))
+    model_weights = np.zeros((len(semantic_features[0]), len(signals_train[0])))
 
-    y = np.zeros((len(words_train), 1))
-    for i in range(len(words_train)):
-        word_index = words_train[i]
-        y[i][0] = semantic_features[word_index - 1][0]
+    # Build a linear model for every semantic feature
+    for i in range(len(semantic_features[0])):
+        print("Building linear model for semantic feature " + str(i + 1) + " :")
+        # build the y-train vector for the current semantic feature
+        for j in range(len(words_train)):
+            word_index = words_train[j]
+            y[i][j] = semantic_features[word_index - 1][i]
 
+        # build the y-test vector for the current semantic feature
+        for j in range(len(words_test)):
+            word_index = words_test[j][0]
+            # Word test stores things as floats, and the lookup in semantic features doesn't work
+            # unless it is converted to int
+            word_index = int(word_index)
+            y_test[i][j] = semantic_features[word_index - 1][i]
 
+        # Pull out the current y and y_test vectors
+        cur_y = y[i]
+        cur_y_test = y_test[i]
 
-def k_fold_generator(X, y, k_fold):
-    subset_size = int(len(X) / k_fold)
-    for k in range(k_fold):
-        X_train = X[:k * subset_size] + X[(k + 1) * subset_size:]
-        X_valid = X[k * subset_size:][:subset_size]
-        y_train = y[:k * subset_size] + y[(k + 1) * subset_size:]
-        y_valid = y[k * subset_size:][:subset_size]
+        # Initialize the KFold split generator
+        # Performing 10 fold cross validation on training set
+        num_folds = 10
+        kf = KFold(n_splits=num_folds)
+        min_lambda = lambda_values_scd[0]
+        min_error = 0
+        best_weights = np.zeros(len(signals_train[0]))
 
-        return X_train, y_train, X_valid, y_valid
+        # If using kfold check a range of lambda values and determine CV error on each one
+        # to find min error and best lambda for this particular model
+        # Otherwise use test set to determine best lambda choice
+        if use_k_fold:
+            for k in range(len(lambda_values_scd)):
+                cross_validation_error = 0.0
+                cur_lambda = lambda_values_scd[k]
+                print("Testing lambda value: " + str(lambda_values_scd[k]))
+                for index_train, index_valid in kf.split(signals_train):
+                    weights = np.zeros(len(signals_train[0]))
+                    X_train, X_valid = signals_train[index_train], signals_train[index_valid]
+                    y_train, y_valid = cur_y[index_train], cur_y[index_valid]
+                    weights = scd(cur_lambda, y_train, X_train, weights, 20)
+
+                    cross_validation_error += squared_error(y_valid, X_valid, weights)
+                avg_cv_error = cross_validation_error / float(num_folds)
+                if k == 0 or avg_cv_error < min_error:
+                    min_error = avg_cv_error
+                    min_lambda = lambda_values_scd[k]
+                    best_weights = weights
+            model_weights[i] = best_weights
+        else:
+            for k in range(len(lambda_values_scd)):
+                print("Testing lambda value: " + str(lambda_values_scd[k]))
+                weights = np.zeros(len(signals_train[0]))
+                cur_lambda = lambda_values_scd[k]
+                weights = scd(cur_lambda, cur_y, signals_train, weights, 20)
+                squared_error_test = squared_error(cur_y_test, signals_test, weights)
+                print(squared_error_test)
+                if k == 0 or squared_error_test < min_error:
+                    min_error = squared_error_test
+                    min_lambda = lambda_values_scd[k]
+                    best_weights = weights
+            model_weights[i] = best_weights
+
+        # Print end results for the current model
+        print("Best lambda: " + str(min_lambda))
+        print("Error on this model: " + str(min_error))
+        print("Number of nonzero coefficients " + str(np.count_nonzero(model_weights[i])))
+
+    # All linear models have been built and
+    # model_weights should now contain 218 linear models for
+    # each of the semantic features
+    print("All linear models built")
+
 
 # Plots model fit data (squared test & train error and num nonzero
 # coefficients) about different lambda values for chosen semantic features
