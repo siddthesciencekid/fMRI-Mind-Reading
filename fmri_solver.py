@@ -54,12 +54,11 @@ def main():
     plot_semantic_feature_squared_error(signals_test, signals_train,
                                         words_test, words_train, semantic_features,
                                         lambda_values_scd, False)
-
+   
     plot_semantic_feature_squared_error(signals_test, signals_train,
                                         words_test, words_train, semantic_features,
                                         lambda_values_pgd, True)
-    '''
-
+     '''
     y = np.zeros((len(semantic_features[0]), len(words_train)))
     y_test = np.zeros((len(semantic_features[0]), len(words_test)))
     model_weights = np.zeros((len(semantic_features[0]), len(signals_train[0])))

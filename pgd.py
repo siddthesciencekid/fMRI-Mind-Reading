@@ -12,47 +12,22 @@ def pgd(lmbda, y, X, w, step_size, num_iterations):
     current_iteration = 0
     w_new = np.copy(w)
     beta = .5
-    # our total cost is f(x) + lambda * l1 penalty = RSS(w) + lambda*l1penalty
-    # References to f(x) are to the RSS(w)
+    alpha = .25
+    left = 100
+    right = 0
     while (current_iteration < num_iterations):
-        # Compute gradients while picking correct stepsize
-        f_xk1 = 100
-        line_search_value = 0
-        # Pick correct stepsize using Armijo's rule, ends when f(x^k+1) <= f(x^k) - 1/2(1/step_size)*||gradient(f(x^k))||^2
-        while (f_xk1 > line_search_value):
-            # Compute the gradient vector. X^T*(Xw - y)
-            # In the book this is described as g_k
-            g_k = np.dot(X.T, np.dot(X, w) - y)
-            # Subtract gradient * step_size from current vector of w
-            # In the book this is described as u_k
+        while (left > right):
+            step_size  = step_size * beta
+            g_k = 2.0 * np.dot(X.T, np.dot(X, w) - y)
             u_k = w - step_size * g_k
-
-            # Soft thresholding element-wise: soft(gradient, step_size * lambda)
-            # Since the penalty is L1, this is the proximal operator.
             w_new = np.sign(u_k) * v_max(np.absolute(u_k) - step_size * lmbda)
-
-            # Use line search to update the step size
-            # Using Armijo's rule
-            # Stop when f(x^k+1) <= f(x^k) - 1/2(1/step_size)*||gradient(f(x^k))||^2
-            f_xk1 = res_sum_square(X, w_new, y)
-            f_xk = res_sum_square(X, w, y)
-            line_search_value = line_search(X, w, y, step_size, w_new)
-            step_size = step_size * beta
-
-        # Converged, exit while loop
-        if res_sum_square(X, w, y) <= res_sum_square(X, w_new, y):
-            current_iteration = num_iterations
-        else:
-            w = np.copy(w_new)
+            left = res_sum_square(X, w_new, y)
+            right = res_sum_square(X, w, y)
+            sub = alpha * step_size * np.linalg.norm(g_k) ** 2
+            right = right - sub
+        w = np.copy(w_new)
+        current_iteration += 1
     return w
-
-
-def line_search(X, w, y, step_size, w_new):
-    f_xk = res_sum_square(X, w, y)
-    fit_gradient = np.dot((np.dot(X.T, np.dot(X,w.T) - y)).T, (w_new - w).T)
-    fit_fx = (np.linalg.norm(w_new - w) ** 2) / (2 * step_size)
-    return f_xk + fit_gradient + fit_fx
-
 
 # RSS: ||wX - y||^2 (Measure of fit)
 def res_sum_square(X, w, y):
