@@ -119,7 +119,7 @@ def main():
                 cur_lambda = lambda_values_scd[k]
                 weights = scd(cur_lambda, cur_y, signals_train, weights, 20)
                 squared_error_test = squared_error(cur_y_test, signals_test, weights)
-                print(squared_error_test)
+                print("Error for this lambda: " + str(squared_error_test))
                 if k == 0 or squared_error_test < min_error:
                     min_error = squared_error_test
                     min_lambda = lambda_values_scd[k]
@@ -135,6 +135,7 @@ def main():
     # model_weights should now contain 218 linear models for
     # each of the semantic features
     print("All linear models built")
+    scipy.io.mmwrite("model_weights.mtx", model_weights)
 
 
 # Plots model fit data (squared test & train error and num nonzero
