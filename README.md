@@ -1,6 +1,10 @@
 # fMRI-Mind-Reading
 Final Project for the Machine Learning Class (CSE 446) at the University of Washington
 
+# Abstract
+This project involves discovering how fMRI brain scans can be used to predict what word a person is reading based off of activation patterns in the brain. The goal is to first learn 218 sparse linear models, each predicting a semantic feature of the word based on an fMRI input. Using Coordinate Descent and Stochastic Coordinate Descent for Lasso, as well Proximal Gradient Descent with L1 penalty, we figured out the coefficients to predict the value of a semantic feature. Given a new brain scan input,  we are able to build a 218-dimensional vector representing the values of semantic features of the word read. Given two candidate words, we use binary classification to choose the word whose semantic feature vector is closer to the predicted one.
+
+
 ## Project Contributers
 1. Shilpa Kumar
 2. Siddhartha Gorti
@@ -41,7 +45,8 @@ the model weights to generate 218 x 1 vector and use 1-NN classification to dete
 which word was most likely read. Plot information about the model's mistake rate when given a set of known
 test words and associated brain scan will be generated.
 
-NOTE: Requires `model_weights.mtx` file to be present. Use the build_model function if lacking or download from.
+NOTE: Requires `model_weights.mtx` file to be present. Use the build_model function if lacking or download from 
+[our Github](https://github.com/siddthesciencekid/fMRI-Mind-Reading/blob/master/model_weights.zip "Model Weights Download").
 
 Example usage: `fmri_solver.py build_model kfold` & 
 `fmri_solver.py test_model`

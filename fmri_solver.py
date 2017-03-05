@@ -25,7 +25,8 @@
 # the model weights to generate 218 x 1 vector and use 1-NN classification to determine between two words
 # which word was most likely read. Plot information about the model's mistake rate when given a set of known
 # test words and associated brain scan will be generated.
-# NOTE: REQUIRES model_weights.mtx file to be present. Use build_model if lacking.
+# NOTE: REQUIRES model_weights.mtx file to be present. Use build_model if lacking or download from
+# https://github.com/siddthesciencekid/fMRI-Mind-Reading/blob/master/model_weights.zip.
 #
 # Example usage: 'fmri_solver.py build_model kfold' 'fmri_solver.py test_model'
 
