@@ -8,7 +8,7 @@
 # fmri_solver.py <function> <optional_param>
 #
 # FUNCTION LIST:
-# test_sem: Use this to plot model fit data (squared test & train error and num nonzero
+# test_algs: Use this to plot model fit data (squared test & train error and num nonzero
 # coefficients) about different lambda values for chosen semantic features for both
 # SCD and PGD.
 #
@@ -62,7 +62,7 @@ def main():
     lambda_values_pgd = [.1, .5, 1, 5, 10, 20, 40, 100, 200]
     lambda_values_scd = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
 
-    if sys.argv[1] == "test_sem":
+    if sys.argv[1] == "test_algs":
 
         # Use these functions to plot model fit data (squared test & train error and num nonzero
         # coefficients) about different lambda values for chosen semantic features for both

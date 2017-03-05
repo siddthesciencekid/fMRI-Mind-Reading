@@ -17,7 +17,7 @@ unzip the model_weights file or generate it to use the program
 `fmri_solver.py <function> <optional_param>`
 
 ## FUNCTION LIST:
-### test_sem
+### test_algs
 Use this to plot model fit data (squared test & train error and num nonzero
 coefficients) about different lambda values for chosen semantic features for both
 SCD and PGD.
