@@ -89,8 +89,8 @@ def main():
         try:
             model_weights = scipy.io.mmread("model_weights.mtx")
         except IOError:
-            print("Otherwise use build_model to generate the weights or download it from the repository")
             print("Please ensure that model_weights.mtx is in the current directory.")
+            print("Otherwise use build_model to generate the weights or download it from the repository")
             sys.exit("Could not find or read the model weights file.")
 
         '''
@@ -120,6 +120,7 @@ def main():
             generate graphs
         '''
         test_semantic_feature_vec = generate_semantic_feature_vector(model_weights, signals_test[1])
+        print(get_word(int(words_test[1][0])))
         word = one_nn_classification(test_semantic_feature_vec, "celery", "carrot", semantic_features)
         print(word)
 
@@ -137,6 +138,18 @@ def generate_semantic_feature_vector(model_weights, signals):
         cur_semantic_feature_value = np.dot(signals, cur_model)
         model_semantic_features[i] = cur_semantic_feature_value
     return model_semantic_features
+
+
+# Returns the word associated with a particular line index
+# from dictionary.txt
+def get_word(index):
+    index += 1
+    with open("data/meta/dictionary.txt") as f:
+        for i, line in enumerate(f, 1):
+            line = line.strip()
+            if i == index:
+                return line
+        return ""
 
 
 # Performs a 1-NN classification (which is simply nearest neighbor) on a generated
