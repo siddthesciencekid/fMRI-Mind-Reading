@@ -97,15 +97,29 @@ def main():
         TEST CODE GOES HERE
         I tested one word from the test set (signals_test[0] happens to be house) and ran the following
         code and the word printed was house. YAYYYY
-        Anyways make some functions to run for all signals_test and use generate_semantic_feature_vector
+        Anyways make some functions to run for all signals_test and
+        use
+        -generate_semantic_feature_vector
+        -get_line_number
+        -get_word
+        -one_nn_classification
 
         If you have any questions
 
         TODO:
-        Run for all test words, compute whether mistake or not and make bar graph
+        foreach word i in len(signals_test)
+            find word_i read (get_word using words_test[i])
+            find brain_scan_i (signals_test[i])
+            generate the semantic_feature_vec_i using brain_scan_i
+            perform one_nn_classification using
+                -semantic_feature_vec_i
+                -word_i
+                -random word
+            record whether mistake or not
+            generate graphs
         '''
-        test_semantic_feature_vec = generate_semantic_feature_vector(model_weights, signals_test[0])
-        word = one_nn_classification(test_semantic_feature_vec, "house", "cup", semantic_features)
+        test_semantic_feature_vec = generate_semantic_feature_vector(model_weights, signals_test[1])
+        word = one_nn_classification(test_semantic_feature_vec, "celery", "carrot", semantic_features)
         print(word)
 
     else:
@@ -137,6 +151,8 @@ def one_nn_classification(semantic_features_vec, word1, word2, semantic_features
 
     distance1 = np.linalg.norm(semantic_features_vec - word1_sem_vec)
     distance2 = np.linalg.norm(semantic_features_vec - word2_sem_vec)
+    print(distance1)
+    print(distance2)
     if distance1 <= distance2:
         return word1
     else:
