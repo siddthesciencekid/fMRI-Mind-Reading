@@ -3,8 +3,32 @@
 # CSE 446 Machine Learning
 # WINTER 2017
 
-# To build the model with k-fold cross validation call the script with the optional parameter kfold
-# i.e. fmri_solver.py kfold
+#
+# USAGE INSTRUCTIONS:
+# fmri_solver.py <function> <optional_param>
+#
+# FUNCTION LIST:
+# test_algs: Use this to plot model fit data (squared test & train error and num nonzero
+# coefficients) about different lambda values for chosen semantic features for both
+# SCD and PGD.
+#
+# build_model: Use this to build the 218 x 21764 matrix where each row i is a linear model
+# to generate semantic feature i from the 21764 voxel features given from a brain scan. The models
+# are saved in the local directory as an mtx file "model_weights.mtx"
+# NOTE: build_model requires <optional param>
+#   kfold: To use kfold cross validation to choose the best tuning parameter
+#   WARNING: ENABLING KFOLD CROSS VALIDATION SIGNIFICANTLY INCREASES THE RUN TIME OF THIS PROGRAM
+#
+#   test: To use test set validation to choose the best tuning parameter
+#
+# test_model: Use this to test the model against our test data. For a given brain scan input we use
+# the model weights to generate 218 x 1 vector and use 1-NN classification to determine between two words
+# which word was most likely read. Plot information about the model's mistake rate when given a set of known
+# test words and associated brain scan will be generated.
+# NOTE: REQUIRES model_weights.mtx file to be present. Use build_model if lacking or download from
+# https://github.com/siddthesciencekid/fMRI-Mind-Reading/blob/master/model_weights.zip.
+#
+# Example usage: 'fmri_solver.py build_model kfold' 'fmri_solver.py test_model'
 
 import scipy.io
 import numpy as np
@@ -20,13 +44,9 @@ from pgd import pgd
 
 
 def main():
-    # To use kfold cross validation pass in kfold as a command line parameter
-    # Otherwise the best lambda tuning parameter value will be selected using the test set
-    # WARNING: ENABLING KFOLD CROSS VALIDATION SIGNIFICANTLY INCREASES THE RUN TIME OF THIS PROGRAM
-    if len(sys.argv) > 1:
-        use_k_fold = True if sys.argv[1] == "kfold" else False
-    else:
-        use_k_fold = False
+    # Exit if the usage instructions are not satisfied
+    if len(sys.argv) < 2:
+        sys.exit("Please check usage instructions before using the program")
 
     # READ IN DATA FROM DATA FILES INTO MATRICES
     signals_test = scipy.io.mmread("data/subject1_fmri_std.test.mtx")
@@ -40,25 +60,135 @@ def main():
     
     semantic_features = scipy.io.mmread("data/word_feature_centered.mtx")
 
-    # Use these functions to plot model fit data (squared test & train error and num nonzero
-    # coefficients) about different lambda values for chosen semantic features for both
-    # SCD and PGD.
-
-    # NOTE: LAMBDA values are different across the two
-    # SET THE LAST PARAMETER TO FALSE TO PLOT MODEL FIT DATA USING SCD AND TRUE FOR PGD
-
     lambda_values_pgd = [.1, .5, 1, 5, 10, 20, 40, 100, 200]
     lambda_values_scd = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
 
-    '''
-    plot_semantic_feature_squared_error(signals_test, signals_train,
-                                        words_test, words_train, semantic_features,
-                                        lambda_values_scd, False)
-   
-    plot_semantic_feature_squared_error(signals_test, signals_train,
-                                        words_test, words_train, semantic_features,
-                                        lambda_values_pgd, True)
-     '''
+    if sys.argv[1] == "test_algs":
+
+        # Use these functions to plot model fit data (squared test & train error and num nonzero
+        # coefficients) about different lambda values for chosen semantic features for both
+        # SCD and PGD.
+
+        # NOTE: LAMBDA values are different across the two
+        # SET THE LAST PARAMETER TO FALSE TO PLOT MODEL FIT DATA USING SCD AND TRUE FOR PGD
+        plot_semantic_feature_squared_error(signals_test, signals_train,
+                                            words_test, words_train, semantic_features,
+                                            lambda_values_scd, False)
+
+        plot_semantic_feature_squared_error(signals_test, signals_train,
+                                            words_test, words_train, semantic_features,
+                                            lambda_values_pgd, True)
+    elif sys.argv[1] == "build_model":
+        if len(sys) < 3 or sys.argv[2] == "test":
+            build_model(signals_test, signals_train, words_test, words_train,
+                        semantic_features, lambda_values_scd, False)
+        elif sys.argv[2] == "kfold":
+            build_model(signals_test, signals_train, words_test, words_train,
+                        semantic_features, lambda_values_scd, True)
+    elif sys.argv[1] == "test_model":
+        try:
+            model_weights = scipy.io.mmread("model_weights.mtx")
+        except IOError:
+            print("Please ensure that model_weights.mtx is in the current directory.")
+            print("Otherwise use build_model to generate the weights or download it from the repository")
+            sys.exit("Could not find or read the model weights file.")
+
+        '''
+        SHEBLY
+        TEST CODE GOES HERE
+        I tested one word from the test set (signals_test[0] happens to be house) and ran the following
+        code and the word printed was house. YAYYYY
+        Anyways make some functions to run for all signals_test and
+        use
+        -generate_semantic_feature_vector
+        -get_line_number
+        -get_word
+        -one_nn_classification
+
+        If you have any questions
+
+        TODO:
+        foreach word i in len(signals_test)
+            find word_i read (get_word using words_test[i])
+            find brain_scan_i (signals_test[i])
+            generate the semantic_feature_vec_i using brain_scan_i
+            perform one_nn_classification using
+                -semantic_feature_vec_i
+                -word_i
+                -random word
+            record whether mistake or not
+            generate graphs
+        '''
+        test_semantic_feature_vec = generate_semantic_feature_vector(model_weights, signals_test[1])
+        print(get_word(int(words_test[1][0])))
+        word = one_nn_classification(test_semantic_feature_vec, "celery", "carrot", semantic_features)
+        print(word)
+
+    else:
+        sys.exit("Please check usage instructions before using the program. Invalid function specified")
+
+
+# Returns one 218 x 1 vector, the generated values for each semantic features
+# from one given fmri brain scan. The fmri_brain scan is in the form of 21764 x 1 vector
+# representing the voxel values for a given signal
+def generate_semantic_feature_vector(model_weights, signals):
+    model_semantic_features = np.zeros(len(model_weights))
+    for i in range(len(model_semantic_features)):
+        cur_model = model_weights[i]
+        cur_semantic_feature_value = np.dot(signals, cur_model)
+        model_semantic_features[i] = cur_semantic_feature_value
+    return model_semantic_features
+
+
+# Returns the word associated with a particular line index
+# from dictionary.txt
+def get_word(index):
+    index += 1
+    with open("data/meta/dictionary.txt") as f:
+        for i, line in enumerate(f, 1):
+            line = line.strip()
+            if i == index:
+                return line
+        return ""
+
+
+# Performs a 1-NN classification (which is simply nearest neighbor) on a generated
+# semantic features vector and the semantic feature vectors for two passed in words
+# Returns the word that the generated vector is closer to
+def one_nn_classification(semantic_features_vec, word1, word2, semantic_features):
+    word1_index = get_line_number(word1)
+    word2_index = get_line_number(word2)
+    if word1_index == -1 or word2_index == -1:
+        sys.exit("Word not found in dictionary.txt")
+    word1_sem_vec = semantic_features[word1_index]
+    word2_sem_vec = semantic_features[word2_index]
+
+    distance1 = np.linalg.norm(semantic_features_vec - word1_sem_vec)
+    distance2 = np.linalg.norm(semantic_features_vec - word2_sem_vec)
+    print(distance1)
+    print(distance2)
+    if distance1 <= distance2:
+        return word1
+    else:
+        return word2
+
+
+# Find the line index of the word which will later be used when
+# looking up its associated semantic feature vector
+# Returns -1 if not found in dictionary.txt
+def get_line_number(word):
+    with open("data/meta/dictionary.txt") as f:
+        for i, line in enumerate(f, 1):
+            line = line.strip()
+            if word in line:
+                return i - 1
+        return -1
+
+
+# Builds the 218 x 21764 matrix representing the linear models for each semantic feature
+# and writes it to a local data file "model_weights.mtx"
+def build_model(signals_test, signals_train, words_test,
+                words_train, semantic_features, lambda_values_scd, use_k_fold):
     y = np.zeros((len(semantic_features[0]), len(words_train)))
     y_test = np.zeros((len(semantic_features[0]), len(words_test)))
     model_weights = np.zeros((len(semantic_features[0]), len(signals_train[0])))
