@@ -4,7 +4,10 @@
 # WINTER 2017
 
 # To build the model with k-fold cross validation call the script with the optional parameter kfold
-# i.e. fmri_solver.py kfold
+#
+# USAGE INSTRUCTIONS:
+# fmri_solver.py <function> <optional_param>
+# fmri_solver.py 
 
 import scipy.io
 import numpy as np
