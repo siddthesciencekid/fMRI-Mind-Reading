@@ -103,11 +103,11 @@ def main():
 
         TODO:
         Run for all test words, compute whether mistake or not and make bar graph
-
+        '''
         test_semantic_feature_vec = generate_semantic_feature_vector(model_weights, signals_test[0])
         word = one_nn_classification(test_semantic_feature_vec, "house", "cup", semantic_features)
         print(word)
-        '''
+
     else:
         sys.exit("Please check usage instructions before using the program. Invalid function specified")
 
@@ -153,7 +153,6 @@ def get_line_number(word):
             if word in line:
                 return i - 1
         return -1
-
 
 
 # Builds the 218 x 21764 matrix representing the linear models for each semantic feature
