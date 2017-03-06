@@ -110,7 +110,6 @@ def main():
                 num_correct += 1
 
         values = [num_correct, 60 - num_correct]
-        print(values)
         ind = [0.1, 1]
         fig, ax = plt2.subplots()
         rects1 = ax.bar(ind, values, .5, color='r')
@@ -118,9 +117,8 @@ def main():
         ax.set_xticks([.35, 1.25])
         ax.set_xlabel("Num Correct vs Incorrect Classifications")
         ax.set_xticklabels(('Correct', 'Incorrect'))
-        plt2.savefig("correct_vs_random_classification2.png")
+        plt2.savefig("correct_vs_random_classification.png")
         plt2.close()
-
 
 
     else:
