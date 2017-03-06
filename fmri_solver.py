@@ -38,6 +38,7 @@ import math
 import random
 
 from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt2
 from sklearn.model_selection import KFold
 from multiprocessing import Pool, Lock
 from lasso import lasso
@@ -95,18 +96,6 @@ def main():
             print("Otherwise use build_model to generate the weights or download it from the repository")
             sys.exit("Could not find or read the model weights file.")
 
-        '''
-        SHEBLY
-        TEST CODE GOES HERE
-        I tested one word from the test set (signals_test[0] happens to be house) and ran the following
-        code and the word printed was house. YAYYYY
-        Anyways make some functions to run for all signals_test and
-        use
-        -generate_semantic_feature_vector
-        -get_line_number
-        -get_word
-        -one_nn_classification
-        '''
         # Testing predictions with correct word and a random word
         num_correct = 0
         for i in range(len(signals_test)):  # Test each of the 60 words
@@ -118,12 +107,22 @@ def main():
             word_predicted = one_nn_classification(test_semantic_feature_vec, word_actual,
                                                    word_random, semantic_features)
             if word_actual == word_predicted:
-                print("1")
                 num_correct += 1
-            else:
-                print("0")
-        # record whether mistake or not
-        print(num_correct)
+
+        values = [num_correct, 60 - num_correct]
+        print(values)
+        ind = [0.1, 1]
+        fig, ax = plt2.subplots()
+        rects1 = ax.bar(ind, values, .5, color='r')
+        ax.set_title("Choosing between actual word and random word")
+        ax.set_xticks([.35, 1.25])
+        ax.set_xlabel("Num Correct vs Incorrect Classifications")
+        ax.set_xticklabels(('Correct', 'Incorrect'))
+        plt2.savefig("correct_vs_random_classification2.png")
+        plt2.close()
+
+
+
     else:
         sys.exit("Please check usage instructions before using the program. Invalid function specified")
 
