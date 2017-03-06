@@ -35,6 +35,7 @@ import numpy as np
 import sys
 import timeit
 import math
+import random
 
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold
@@ -104,26 +105,23 @@ def main():
         -get_line_number
         -get_word
         -one_nn_classification
-
-        If you have any questions
-
-        TODO:
-        foreach word i in len(signals_test)
-            find word_i read (get_word using words_test[i])
-            find brain_scan_i (signals_test[i])
-            generate the semantic_feature_vec_i using brain_scan_i
-            perform one_nn_classification using
-                -semantic_feature_vec_i
-                -word_i
-                -random word
-            record whether mistake or not
-            generate graphs
-        '''
-        test_semantic_feature_vec = generate_semantic_feature_vector(model_weights, signals_test[1])
-        print(get_word(int(words_test[1][0])))
-        word = one_nn_classification(test_semantic_feature_vec, "celery", "carrot", semantic_features)
-        print(word)
-
+		'''
+        # Testing predictions with correct word and a random word
+        num_correct = 0
+        for i in range(len(signals_test)): # Test each of the 60 words
+        	brain_scan_i = signals_test[i]
+        	test_semantic_feature_vec = generate_semantic_feature_vector(model_weights, brain_scan_i)
+        	word_actual = get_word(words_test[i][0])
+        	random_index = random.randint(0, len(signals_test) - 1)
+        	word_random = get_word(words_test[random_index][0])
+        	word_predicted = one_nn_classification(test_semantic_feature_vec, word_actual, word_random, semantic_features)
+        	if (word_actual == word_predicted):
+        		print("1")
+        		num_correct += 1
+        	else:
+        		print("0")
+        # record whether mistake or not
+        print(num_correct)
     else:
         sys.exit("Please check usage instructions before using the program. Invalid function specified")
 
