@@ -391,9 +391,9 @@ def plot_num_zero(data_map, method):
         log_lambda, data = zip(*li)
         plt.plot(log_lambda, data, label="Semantic Feature " + str(key + 1))
     plt.xlabel("ln(lambda)")
-    plt.ylabel("Num of Zero Coefficients")
+    plt.ylabel("Num of Non-Zero Coefficients")
     plt.legend()
-    plt.title("Log of Lambda vs. Number of Zero Coefficients (For " + method + ")")
+    plt.title("Log of Lambda vs. Number of Non-Zero Coefficients (For " + method + ")")
     plt.savefig("numNonZero_" + method + ".png")
     plt.close()
 
